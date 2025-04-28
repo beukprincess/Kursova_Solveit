@@ -92,11 +92,12 @@ class HomeActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            imageView.visibility = ImageView.VISIBLE
             val imageBitmap: Bitmap? = data?.extras?.get("data") as? Bitmap
-            imageView.setImageBitmap(imageBitmap)
 
             if (imageBitmap != null) {
+                imageView.visibility = ImageView.VISIBLE
+                imageView.setImageBitmap(imageBitmap)
+
                 val calendar = Calendar.getInstance()
                 val year = calendar.get(Calendar.YEAR)
                 val month = calendar.get(Calendar.MONTH) + 1
@@ -107,18 +108,22 @@ class HomeActivity : AppCompatActivity() {
                 val fileName = "$year-$month-$day $hour-$minute-$second"
                 val isSaved = saveImageToMediaStore(imageBitmap, fileName)
 
-                val builder = AlertDialog.Builder(this)
                 if (isSaved) {
-                    builder.setTitle("Saved!").setMessage("Image saved successfully.")
+                    Log.d("HomeActivity", "Image saved successfully.")
                 } else {
-                    builder.setTitle("Error!").setMessage("Failed to save image.")
+                    Log.e("HomeActivity", "Failed to save image.")
                 }
-                builder.create().show()
+
+                // 🚀 Now switch to SolutionActivity
+                val intent = Intent(this, SolutionActivity::class.java)
+                startActivity(intent)
             } else {
-                Toast.makeText(this, "Error: Could not retrieve image data.", Toast.LENGTH_SHORT).show()
+                Log.e("HomeActivity", "Error: Could not retrieve image data.")
             }
         }
     }
+
+
 
     private fun saveImageToMediaStore(bitmap: Bitmap, fileName: String): Boolean {
         val contentValues = ContentValues().apply {
