@@ -19,6 +19,7 @@ import android.graphics.YuvImage
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.ImageView
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,6 +29,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Thread.sleep(3000)
+        installSplashScreen()
         setContentView(R.layout.activity_main)
 
         imageView = findViewById<ImageView>(R.id.image_save)
