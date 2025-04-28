@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
             actionBar.hide()
         }
 
-        button1 = findViewById<Button>(R.id.log_in_button)
+        button1 = findViewById<Button>(R.id.register_button)
 
         button1.setOnClickListener {
             val intent = Intent(this, HomeActivity::class.java)
