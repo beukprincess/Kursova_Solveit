@@ -106,26 +106,24 @@ class HomeActivity : AppCompatActivity() {
                 val minute = calendar.get(Calendar.MINUTE)
                 val second = calendar.get(Calendar.SECOND)
                 val fileName = "$year-$month-$day $hour-$minute-$second"
-                val isSaved = saveImageToMediaStore(imageBitmap, fileName)
+                val imageUri = saveImageToMediaStore(imageBitmap, fileName) // <-- Get the URI
 
-                if (isSaved) {
-                    Log.d("HomeActivity", "Image saved successfully.")
+                if (imageUri != null) {
+                    Log.d("HomeActivity", "Image saved successfully. URI: $imageUri")
+                    // 🚀 Now switch to SolutionActivity and pass the URI
+                    val intent = Intent(this, SolutionActivity::class.java)
+                    intent.putExtra("imageUri", imageUri.toString()) // Convert URI to String to pass
+                    startActivity(intent)
                 } else {
                     Log.e("HomeActivity", "Failed to save image.")
                 }
-
-                // 🚀 Now switch to SolutionActivity
-                val intent = Intent(this, SolutionActivity::class.java)
-                startActivity(intent)
             } else {
                 Log.e("HomeActivity", "Error: Could not retrieve image data.")
             }
         }
     }
 
-
-
-    private fun saveImageToMediaStore(bitmap: Bitmap, fileName: String): Boolean {
+    private fun saveImageToMediaStore(bitmap: Bitmap, fileName: String): android.net.Uri? { // <-- Return Uri?
         val contentValues = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, "$fileName.png")
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
@@ -145,20 +143,20 @@ class HomeActivity : AppCompatActivity() {
                     outputStream.close()
                 } else {
                     contentResolver.delete(imageUri, null, null)
-                    return false
+                    return null // Return null if saving fails
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     contentValues.clear()
                     contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
                     contentResolver.update(imageUri, contentValues, null, null)
                 }
-                return true
+                return imageUri // Return the URI of the saved image
             } catch (e: IOException) {
                 e.printStackTrace()
                 contentResolver.delete(imageUri, null, null)
-                return false
+                return null // Return null if saving fails
             }
         }
-        return false
+        return null // Return null if insertion fails
     }
 }
