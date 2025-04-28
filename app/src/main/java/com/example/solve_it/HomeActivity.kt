@@ -34,6 +34,8 @@ class HomeActivity : AppCompatActivity() {
         imageView = findViewById(R.id.image_save)
         button = findViewById(R.id.camera_button)
 
+        imageView.visibility = ImageView.GONE
+
         button.setOnClickListener {
             checkCameraPermission()
         }
@@ -90,6 +92,7 @@ class HomeActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            imageView.visibility = ImageView.VISIBLE
             val imageBitmap: Bitmap? = data?.extras?.get("data") as? Bitmap
             imageView.setImageBitmap(imageBitmap)
 
