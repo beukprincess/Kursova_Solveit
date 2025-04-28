@@ -103,6 +103,7 @@ class HomeActivity : AppCompatActivity() {
                 val second = calendar.get(Calendar.SECOND)
                 val fileName = "$year-$month-$day $hour-$minute-$second"
                 val isSaved = saveImageToMediaStore(imageBitmap, fileName)
+
                 val builder = AlertDialog.Builder(this)
                 if (isSaved) {
                     builder.setTitle("Saved!").setMessage("Image saved successfully.")
