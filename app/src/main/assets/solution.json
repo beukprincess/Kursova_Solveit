@@ -1,0 +1,11 @@
+{
+  "name": "Pythagorean Theorem",
+  "solution": {
+    "step1": "a^2 + b^2 = c^2",
+    "step2": "3^2 + 4^2 = 5^2",
+    "step3": "9 + 16 = 25",
+    "step4": "a = 3\nb = 4\nc = 5",
+    "step5": "P = 3 + 4 + 5\nP = 12"
+  },
+  "answer": "P = 12"
+}
