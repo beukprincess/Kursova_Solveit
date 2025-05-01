@@ -1,73 +1,145 @@
 package com.example.solve_it
 
 import android.Manifest
-import android.app.AlertDialog
-import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
-import android.widget.Button
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import java.io.IOException
-import java.util.Calendar
+import com.example.solve_it.databinding.ActivityMainBinding
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class HomeActivity : AppCompatActivity() {
 
-    lateinit var imageView: ImageView
-    lateinit var button: Button
-    private val REQUEST_IMAGE_CAPTURE = 100
-    private val REQUEST_CAMERA_PERMISSION = 102
+    private lateinit var viewBinding: ActivityMainBinding // Assuming you have view binding enabled
+    private lateinit var imageCapture: ImageCapture
+    private lateinit var cameraExecutor: ExecutorService
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        viewBinding = ActivityMainBinding.inflate(layoutInflater) // Initialize view binding
+        setContentView(viewBinding.root)
 
-        imageView = findViewById(R.id.image_save)
-        button = findViewById(R.id.camera_button)
-
-        imageView.visibility = ImageView.GONE
-
-        button.setOnClickListener {
-            checkCameraPermission()
-        }
-    }
-
-    private fun launchCamera() {
-        Log.d("HomeActivity", "launchCamera() called")
-        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        try {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
-        } catch (e: ActivityNotFoundException) {
-            Toast.makeText(this, "Error: " + e.localizedMessage, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun checkCameraPermission(): Boolean {
-        val cameraPermissionGranted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (!cameraPermissionGranted) {
+        // Request camera permissions
+        if (allPermissionsGranted()) {
+            startCamera()
+        } else {
             ActivityCompat.requestPermissions(
                 this,
-                arrayOf(Manifest.permission.CAMERA),
-                REQUEST_CAMERA_PERMISSION
+                REQUIRED_PERMISSIONS,
+                REQUEST_CODE_PERMISSIONS
             )
-            return false
-        } else {
-            launchCamera()
-            return true
         }
+
+        // Set up the listener for take photo button
+        viewBinding.cameraButton.setOnClickListener { takePhoto() }
+
+        cameraExecutor = Executors.newSingleThreadExecutor()
+    }
+
+    private fun takePhoto() {
+        // Get a stable reference of the modifiable image capture use case
+        val imageCapture = imageCapture ?: return
+
+        // Create time-stamped output file name
+        val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
+            .format(System.currentTimeMillis())
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraX-Image")
+            }
+        }
+
+        // Create output options object which contains file + metadata
+        val outputOptions = ImageCapture.OutputFileOptions
+            .Builder(contentResolver,
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                contentValues)
+            .build()
+
+        // Set up image capture listener, which is triggered after photo has
+        // been taken
+        imageCapture.takePicture(
+            outputOptions,
+            ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onError(exc: ImageCaptureException) {
+                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+                }
+
+                override fun onImageSaved(output: ImageCapture.OutputFileResults){
+                    val savedUri = output.savedUri
+                    Log.d(TAG, "Photo capture succeeded: $savedUri")
+                    savedUri?.let { navigateToSolutionActivity(it) }
+                }
+            }
+        )
+    }
+
+    private fun startCamera() {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+
+        cameraProviderFuture.addListener({
+            // Used to bind the lifecycle of cameras to the lifecycle owner
+            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+
+            // Preview
+            val preview = Preview.Builder()
+                .build()
+                .also {
+                    it.setSurfaceProvider(viewBinding.previewView.surfaceProvider)
+                }
+
+            imageCapture = ImageCapture.Builder()
+                .build()
+
+            // Select back camera as a default
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+            try {
+                // Unbind use cases before rebinding
+                cameraProvider.unbindAll()
+
+                // Bind use cases to camera
+                cameraProvider.bindToLifecycle(
+                    this,
+                    cameraSelector,
+                    preview,
+                    imageCapture
+                )
+
+            } catch(exc: Exception) {
+                Log.e(TAG, "Binding of use cases failed", exc)
+            }
+
+        }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
+        ContextCompat.checkSelfPermission(
+            baseContext, it) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraExecutor.shutdown()
     }
 
     override fun onRequestPermissionsResult(
@@ -76,87 +148,35 @@ class HomeActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                launchCamera()
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            if (allPermissionsGranted()) {
+                startCamera()
             } else {
-                Toast.makeText(
-                    this,
-                    "Camera permission is required to use this feature.",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this,
+                    "Permissions not granted by the user.",
+                    Toast.LENGTH_SHORT).show()
+                finish()
             }
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            val imageBitmap: Bitmap? = data?.extras?.get("data") as? Bitmap
-
-            if (imageBitmap != null) {
-                imageView.visibility = ImageView.VISIBLE
-                imageView.setImageBitmap(imageBitmap)
-
-                val calendar = Calendar.getInstance()
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH) + 1
-                val day = calendar.get(Calendar.DAY_OF_MONTH)
-                val hour = calendar.get(Calendar.HOUR)
-                val minute = calendar.get(Calendar.MINUTE)
-                val second = calendar.get(Calendar.SECOND)
-                val fileName = "$year-$month-$day $hour-$minute-$second"
-                val imageUri = saveImageToMediaStore(imageBitmap, fileName) // <-- Get the URI
-
-                if (imageUri != null) {
-                    Log.d("HomeActivity", "Image saved successfully. URI: $imageUri")
-                    // 🚀 Now switch to SolutionActivity and pass the URI
-                    val intent = Intent(this, SolutionActivity::class.java)
-                    intent.putExtra("imageUri", imageUri.toString()) // Convert URI to String to pass
-                    startActivity(intent)
-                } else {
-                    Log.e("HomeActivity", "Failed to save image.")
-                }
-            } else {
-                Log.e("HomeActivity", "Error: Could not retrieve image data.")
-            }
-        }
+    private fun navigateToSolutionActivity(imageUri: Uri) {
+        val intent = Intent(this, SolutionActivity::class.java)
+        intent.putExtra("imageUri", imageUri.toString())
+        startActivity(intent)
     }
 
-    private fun saveImageToMediaStore(bitmap: Bitmap, fileName: String): android.net.Uri? { // <-- Return Uri?
-        val contentValues = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, "$fileName.png")
-            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.IS_PENDING, 1)
-            }
-        }
-
-        val contentResolver = contentResolver
-        val imageUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-
-        if (imageUri != null) {
-            try {
-                val outputStream = contentResolver.openOutputStream(imageUri)
-                if (outputStream != null) {
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                    outputStream.close()
-                } else {
-                    contentResolver.delete(imageUri, null, null)
-                    return null // Return null if saving fails
+    companion object {
+        private const val TAG = "CameraXApp"
+        private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
+        private const val REQUEST_CODE_PERMISSIONS = 10
+        private val REQUIRED_PERMISSIONS =
+            mutableListOf (
+                Manifest.permission.CAMERA
+            ).apply {
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                    add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    contentValues.clear()
-                    contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
-                    contentResolver.update(imageUri, contentValues, null, null)
-                }
-                return imageUri // Return the URI of the saved image
-            } catch (e: IOException) {
-                e.printStackTrace()
-                contentResolver.delete(imageUri, null, null)
-                return null // Return null if saving fails
-            }
-        }
-        return null // Return null if insertion fails
+            }.toTypedArray()
     }
 }

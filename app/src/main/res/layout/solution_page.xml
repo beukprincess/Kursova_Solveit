@@ -24,6 +24,7 @@
         android:layout_height="60dp"
         android:layout_marginBottom="30dp"
         android:background="@drawable/go_down_button"
+        app:backgroundTint="@null"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

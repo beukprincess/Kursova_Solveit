@@ -36,10 +36,16 @@ android {
     }
     buildFeatures {
         compose = true
+        viewBinding = true
     }
 }
 
 dependencies {
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.camera:camera-camera2:1.4.0-alpha03")
+    implementation("androidx.camera:camera-lifecycle:1.4.0-alpha03")
+    implementation("androidx.camera:camera-view:1.4.0-alpha03")
+    implementation("androidx.camera:camera-extensions:1.4.0-alpha03")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
@@ -53,6 +59,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.material)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
