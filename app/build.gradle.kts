@@ -40,7 +40,14 @@ android {
     }
 }
 
+val ktor_version: String by project
+
 dependencies {
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.camera:camera-camera2:1.4.0-alpha03")
     implementation("androidx.camera:camera-lifecycle:1.4.0-alpha03")

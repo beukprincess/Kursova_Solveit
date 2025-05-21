@@ -23,6 +23,8 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
 
 class HomeActivity : AppCompatActivity() {
 

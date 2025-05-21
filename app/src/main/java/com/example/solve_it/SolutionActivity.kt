@@ -4,12 +4,14 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
 import java.io.BufferedReader
+import java.io.File
 
 class SolutionActivity : AppCompatActivity() {
 
@@ -27,37 +29,53 @@ class SolutionActivity : AppCompatActivity() {
         val imageUriString = intent.getStringExtra("imageUri")
         if (!imageUriString.isNullOrEmpty()) {
             val imageUri = Uri.parse(imageUriString)
-            imageView2.setImageURI(imageUri)
+            val imageFile = uriToFile(imageUri)
+            if (imageFile != null) {
+                imageView2.setImageURI(imageUri)
+
+                // Upload image and wait for result.json
+                ImageUploader.upload(this, imageFile) {
+                    loadAndDisplaySolution()
+                }
+            }
+        } else {
+            // No image URI provided, try loading old result.json anyway
+            loadAndDisplaySolution()
+        }
+    }
+
+    private fun loadAndDisplaySolution() {
+        val resultFile = File(filesDir, "result.json")
+
+        if (!resultFile.exists()) {
+            showError("result.json not found.")
+            return
         }
 
-        // Load JSON from assets
-        val jsonString = assets.open("solution.json").bufferedReader().use(BufferedReader::readText)
-
         try {
-            // Parse the JSON string
-            val solutionJson = JSONObject(jsonString)
-
-            // Get the solution steps as a JSONObject
+            val jsonString = resultFile.readText()
+            val cleanedJsonStringFIRST = jsonString.replace("\\", "")
+            val cleanedJsonStringSECOND = cleanedJsonStringFIRST.replace("\"\"", "\"")
+            val solutionJson = JSONObject("{$cleanedJsonStringSECOND}")
             val solutionSteps = solutionJson.getJSONObject("solution")
 
-            // Iterate through the steps
-            val stepKeys = solutionSteps.keys() // Get the keys (step numbers)
-            val sortedKeys = stepKeys.asSequence().sorted().toList() // Sort the keys
+            val stepKeys = solutionSteps.keys()
+            val sortedKeys = stepKeys.asSequence().sorted().toList()
 
             for (key in sortedKeys) {
-                val stepDescription = solutionSteps.getString(key) // Get description for each step
+                val stepDescription = solutionSteps.getString(key)
                 val stepNumber = key.replace("step", "").toInt()
 
                 val stepTitleTextView = TextView(this).apply {
                     text = "Step ${stepNumber}:"
                     textSize = 35f
                     setTextColor(Color.BLACK)
-                    setTypeface(null, Typeface.BOLD) // Make "Step N:" bold
+                    setTypeface(null, Typeface.BOLD)
                     setPadding(0, 16, 0, 8)
                 }
                 val stepDescriptionTextView = TextView(this).apply {
-                    text = "${stepDescription} \n\n"
-                    textSize = 32f // Increased size for thicker appearance
+                    text = "$stepDescription \n\n"
+                    textSize = 32f
                     setTextColor(Color.BLACK)
                     setPadding(0, 0, 0, 16)
                 }
@@ -65,24 +83,39 @@ class SolutionActivity : AppCompatActivity() {
                 solutionContainer.addView(stepDescriptionTextView)
             }
 
-            // Display the answer
             val answerText = TextView(this).apply {
                 text = "\nAnswer: ${solutionJson.getString("answer")} \n\n\n\n\n\n\n"
                 textSize = 35f
                 setTextColor(Color.BLACK)
-                setTypeface(null, Typeface.BOLD) // Make "Answer" bold as well.
+                setTypeface(null, Typeface.BOLD)
                 setPadding(0, 16, 0, 0)
             }
             solutionContainer.addView(answerText)
 
         } catch (e: Exception) {
-            // Handle JSON parsing errors
-            val errorText = TextView(this).apply {
-                text = "Error parsing JSON: ${e.message}"
-                textSize = 16f
-                setTextColor(Color.RED)
-            }
-            solutionContainer.addView(errorText)
+            Log.e("KOLIA", "Error parsing JSON", e)
+            showError("Error parsing JSON: ${e.message}")
         }
+    }
+
+    private fun showError(message: String) {
+        val errorText = TextView(this).apply {
+            text = message
+            textSize = 16f
+            setTextColor(Color.RED)
+        }
+        solutionContainer.addView(errorText)
+    }
+
+    private fun uriToFile(uri: Uri): File? {
+        val filePathColumn = arrayOf(android.provider.MediaStore.Images.Media.DATA)
+        contentResolver.query(uri, filePathColumn, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val columnIndex = cursor.getColumnIndexOrThrow(filePathColumn[0])
+                val filePath = cursor.getString(columnIndex)
+                return File(filePath)
+            }
+        }
+        return null
     }
 }
