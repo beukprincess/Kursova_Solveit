@@ -32,7 +32,7 @@
             android:name=".HomeActivity"
             android:exported="false"
             android:theme="@style/Theme.Solve_it" />
-
+        <activity android:name=".SettingsActivity" />
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />

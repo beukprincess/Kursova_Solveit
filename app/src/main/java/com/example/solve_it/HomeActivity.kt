@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -18,6 +19,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.airbnb.lottie.LottieAnimationView
 import com.example.solve_it.databinding.ActivityMainBinding
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -31,11 +33,21 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var viewBinding: ActivityMainBinding // Assuming you have view binding enabled
     private lateinit var imageCapture: ImageCapture
     private lateinit var cameraExecutor: ExecutorService
+    lateinit var settingsButton: Button;
+    lateinit var animationView: LottieAnimationView;
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewBinding = ActivityMainBinding.inflate(layoutInflater) // Initialize view binding
+        viewBinding = ActivityMainBinding.inflate(layoutInflater)
+
         setContentView(viewBinding.root)
+
+        settingsButton = findViewById<Button>(R.id.settings_button)
+
+        animationView = findViewById<LottieAnimationView>(R.id.settings_anim)
+        animationView.setAnimation(R.raw.settings_button_animated);
+        animationView.speed = 0.2f;
+        animationView.playAnimation();
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -50,6 +62,10 @@ class HomeActivity : AppCompatActivity() {
 
         // Set up the listener for take photo button
         viewBinding.cameraButton.setOnClickListener { takePhoto() }
+        viewBinding.settingsButton.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
     }

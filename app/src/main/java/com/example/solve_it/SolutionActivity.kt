@@ -5,10 +5,12 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.airbnb.lottie.LottieAnimationView
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.File
@@ -17,15 +19,20 @@ class SolutionActivity : AppCompatActivity() {
 
     lateinit var imageView2: ImageView
     lateinit var solutionContainer: LinearLayout
+    lateinit var animationView: LottieAnimationView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.solution_page)
 
         imageView2 = findViewById(R.id.image_save2)
+        animationView = findViewById<LottieAnimationView>(R.id.animation_view)
         solutionContainer = findViewById(R.id.solutionContainer)
 
-        // Show the image
+        animationView.setAnimation(R.raw.loading_animation);
+        animationView.playAnimation();
+
+
         val imageUriString = intent.getStringExtra("imageUri")
         if (!imageUriString.isNullOrEmpty()) {
             val imageUri = Uri.parse(imageUriString)
@@ -36,11 +43,15 @@ class SolutionActivity : AppCompatActivity() {
                 // Upload image and wait for result.json
                 ImageUploader.upload(this, imageFile) {
                     loadAndDisplaySolution()
+                    animationView.cancelAnimation();
+                    animationView.visibility = View.GONE
                 }
             }
         } else {
             // No image URI provided, try loading old result.json anyway
             loadAndDisplaySolution()
+            animationView.cancelAnimation();
+            animationView.visibility = View.GONE
         }
     }
 
@@ -54,43 +65,59 @@ class SolutionActivity : AppCompatActivity() {
 
         try {
             val jsonString = resultFile.readText()
-            val cleanedJsonStringFIRST = jsonString.replace("\\", "")
-            val cleanedJsonStringSECOND = cleanedJsonStringFIRST.replace("\"\"", "\"")
+
+            val cleanedJsonStringFIRST = jsonString.replace("\"\"", "\"")
+            val unicodeJsonString = decodeUnicode(cleanedJsonStringFIRST)
+            val cleanedJsonStringSECOND = unicodeJsonString.replace("\\", "")
             val solutionJson = JSONObject("{$cleanedJsonStringSECOND}")
             val solutionSteps = solutionJson.getJSONObject("solution")
 
-            val stepKeys = solutionSteps.keys()
-            val sortedKeys = stepKeys.asSequence().sorted().toList()
-
-            for (key in sortedKeys) {
-                val stepDescription = solutionSteps.getString(key)
-                val stepNumber = key.replace("step", "").toInt()
-
-                val stepTitleTextView = TextView(this).apply {
-                    text = "Step ${stepNumber}:"
+            if (isEmpty(solutionSteps)){
+                val answerText = TextView(this).apply {
+                    text = "\nAnswer: ${solutionJson.getString("answer")} \n\n\n\n\n\n\n"
                     textSize = 35f
                     setTextColor(Color.BLACK)
                     setTypeface(null, Typeface.BOLD)
-                    setPadding(0, 16, 0, 8)
+                    setPadding(0, 16, 0, 0)
                 }
-                val stepDescriptionTextView = TextView(this).apply {
-                    text = "$stepDescription \n\n"
-                    textSize = 32f
+                solutionContainer.addView(answerText)
+            }
+            else{
+                val stepKeys = solutionSteps.keys()
+                val sortedKeys = stepKeys.asSequence().sorted().toList()
+
+                for (key in sortedKeys) {
+                    val stepDescription = solutionSteps.getString(key)
+                    val stepNumber = key.replace("step", "").toInt()
+
+                    val stepTitleTextView = TextView(this).apply {
+                        text = "Step ${stepNumber}:"
+                        textSize = 35f
+                        setTextColor(Color.BLACK)
+                        setTypeface(null, Typeface.BOLD)
+                        setPadding(0, 16, 0, 8)
+                    }
+                    val stepDescriptionTextView = TextView(this).apply {
+                        text = "$stepDescription \n\n"
+                        textSize = 32f
+                        setTextColor(Color.BLACK)
+                        setPadding(0, 0, 0, 16)
+                    }
+                    solutionContainer.addView(stepTitleTextView)
+                    solutionContainer.addView(stepDescriptionTextView)
+                }
+
+                val answerText = TextView(this).apply {
+                    text = "\nAnswer: ${solutionJson.getString("answer")} \n\n\n\n\n\n\n"
+                    textSize = 35f
                     setTextColor(Color.BLACK)
-                    setPadding(0, 0, 0, 16)
+                    setTypeface(null, Typeface.BOLD)
+                    setPadding(0, 16, 0, 0)
                 }
-                solutionContainer.addView(stepTitleTextView)
-                solutionContainer.addView(stepDescriptionTextView)
+                solutionContainer.addView(answerText)
             }
 
-            val answerText = TextView(this).apply {
-                text = "\nAnswer: ${solutionJson.getString("answer")} \n\n\n\n\n\n\n"
-                textSize = 35f
-                setTextColor(Color.BLACK)
-                setTypeface(null, Typeface.BOLD)
-                setPadding(0, 16, 0, 0)
-            }
-            solutionContainer.addView(answerText)
+
 
         } catch (e: Exception) {
             Log.e("KOLIA", "Error parsing JSON", e)
@@ -106,6 +133,26 @@ class SolutionActivity : AppCompatActivity() {
         }
         solutionContainer.addView(errorText)
     }
+
+    private fun decodeUnicode(input: String): String {
+        return input.replace("\\\\u([0-9A-Fa-f]{4})".toRegex()) {
+            val hex = it.groupValues[1]
+            hex.toInt(16).toChar().toString()
+        }
+    }
+
+    private fun isEmpty(_solutionSteps: JSONObject): Boolean {
+        val strSteps = _solutionSteps.toString();
+        val quantity = strSteps.count{ it in "Step"};
+        if (quantity == 0) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+
 
     private fun uriToFile(uri: Uri): File? {
         val filePathColumn = arrayOf(android.provider.MediaStore.Images.Media.DATA)
