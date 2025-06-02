@@ -30,7 +30,7 @@ import io.ktor.client.engine.cio.*
 
 class HomeActivity : AppCompatActivity() {
 
-    private lateinit var viewBinding: ActivityMainBinding // Assuming you have view binding enabled
+    private lateinit var viewBinding: ActivityMainBinding
     private lateinit var imageCapture: ImageCapture
     private lateinit var cameraExecutor: ExecutorService
     lateinit var settingsButton: Button;
