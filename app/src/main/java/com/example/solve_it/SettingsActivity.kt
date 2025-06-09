@@ -1,19 +1,28 @@
 package com.example.solve_it
 
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.view.MenuItem
+import androidx.core.content.ContextCompat
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import com.example.solve_it.databinding.ActivityMainBinding
 import com.google.android.material.navigation.NavigationBarView.OnItemSelectedListener
+import androidx.core.graphics.toColorInt
 
 class SettingsActivity : AppCompatActivity(), OnItemSelectedListener  {
 
     private var langs = arrayOf(
         "English", "Ukrainian"
     )
+    private var isOn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,9 +35,65 @@ class SettingsActivity : AppCompatActivity(), OnItemSelectedListener  {
 
         // Set the adapter to the Spinner
         spin.adapter = mArrayAdapter
+
+        val switchLayout = findViewById<ConstraintLayout>(R.id.customSwitch)
+        val thumb = findViewById<View>(R.id.switchThumb)
+
+        val backgroundDrawable = ContextCompat.getDrawable(this, R.drawable.switch_background_off)
+        switchLayout.background = backgroundDrawable?.mutate()
+
+        thumb.elevation = 8f
+
+        switchLayout.setOnClickListener {
+            isOn = !isOn
+
+            val thumbPosition = if (isOn) {
+                switchLayout.width - thumb.width - 2  // right side
+            } else {
+                2  // left side
+            }
+
+
+            thumb.animate()
+                .x(thumbPosition.toFloat())
+                .setDuration(200)
+                .start()
+
+            val colorFrom = if (isOn) "#DADADA".toColorInt() else "#4CAF50".toColorInt()
+            val colorTo = if (isOn) "#4CAF50".toColorInt() else "#DADADA".toColorInt()
+
+            val colorAnim = ValueAnimator.ofObject(ArgbEvaluator(), colorFrom, colorTo)
+            colorAnim.duration = 200
+            colorAnim.addUpdateListener {
+                switchLayout.background.setTint(it.animatedValue as Int)
+            }
+            colorAnim.start()
+        }
+
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         TODO("Not yet implemented")
     }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
