@@ -69,26 +69,32 @@ class MainActivity : AppCompatActivity() {
             val password = regPasswordField.text.toString().trim()
 
             if (email.isNotEmpty() && login.isNotEmpty() && password.isNotEmpty()) {
-                val user = User(email = email, login = login, password = password, history = listOf("registered"))
-
                 lifecycleScope.launch {
                     try {
-                        val response = RetrofitClient.api.createUser(user)
-                        if (response.isSuccessful) {
-                            Toast.makeText(this@MainActivity, "Registration successful!", Toast.LENGTH_SHORT).show()
-                            startActivity(Intent(this@MainActivity, HomeActivity::class.java))
-                            finish()
+                        val users = RetrofitClient.api.getUsers()
+                        val userExists = users.any { it.login == login || it.email == email }
+
+                        if (userExists) {
+                            Toast.makeText(this@MainActivity, "Користувач вже існує!", Toast.LENGTH_SHORT).show()
                         } else {
-                            val errorBody = response.errorBody()?.string()
-                            Toast.makeText(this@MainActivity, "Registration failed: $errorBody", Toast.LENGTH_LONG).show()
-                            println("Registration failed: $errorBody")
+                            val newUser = User(email = email, login = login, password = password)
+                            val response = RetrofitClient.api.createUser(newUser)
+
+                            if (response.isSuccessful) {
+                                Toast.makeText(this@MainActivity, "Успішна реєстрація!", Toast.LENGTH_SHORT).show()
+                                startActivity(Intent(this@MainActivity, HomeActivity::class.java))
+                                finish()
+                            } else {
+                                val errorBody = response.errorBody()?.string()
+                                Toast.makeText(this@MainActivity, "Помилка реєстрації: $errorBody", Toast.LENGTH_LONG).show()
+                            }
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Помилка мережі: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
             } else {
-                Toast.makeText(this, "Fill in all fields", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Заповніть всі поля", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -104,18 +110,18 @@ class MainActivity : AppCompatActivity() {
                         val matchedUser = users.find { it.login == login && it.password == password }
 
                         if (matchedUser != null) {
-                            Toast.makeText(this@MainActivity, "Login successful!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "Успішний вхід!", Toast.LENGTH_SHORT).show()
                             startActivity(Intent(this@MainActivity, HomeActivity::class.java))
                             finish()
                         } else {
-                            Toast.makeText(this@MainActivity, "Invalid login or password", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "Неправильний логін або пароль", Toast.LENGTH_SHORT).show()
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(this@MainActivity, "Login error: ${e.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Помилка входу: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
             } else {
-                Toast.makeText(this, "Please enter login and password", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Введіть логін і пароль", Toast.LENGTH_SHORT).show()
             }
         }
     }
