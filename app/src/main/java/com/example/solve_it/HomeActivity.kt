@@ -41,7 +41,10 @@ class HomeActivity : AppCompatActivity() {
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
 
         setContentView(viewBinding.root)
-
+        val sharedPrefs = getSharedPreferences("MyPrefs", MODE_PRIVATE)
+        val login = sharedPrefs.getString("user_login", "user")
+        val welcomeTextView = findViewById<android.widget.TextView>(R.id.textView2)
+        welcomeTextView.text = "WELCOME, $login"
         settingsButton = findViewById<Button>(R.id.settings_button)
 
         animationView = findViewById<LottieAnimationView>(R.id.settings_anim)
