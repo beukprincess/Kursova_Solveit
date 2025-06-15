@@ -2,6 +2,7 @@ package com.example.solve_it
 
 import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -10,12 +11,15 @@ import android.view.MenuItem
 import androidx.core.content.ContextCompat
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.example.solve_it.databinding.ActivityMainBinding
 import com.google.android.material.navigation.NavigationBarView.OnItemSelectedListener
 import androidx.core.graphics.toColorInt
+import com.example.solve_it.MainActivity
+import com.example.solve_it.HistoryActivity
 
 class SettingsActivity : AppCompatActivity(), OnItemSelectedListener  {
 
@@ -23,12 +27,14 @@ class SettingsActivity : AppCompatActivity(), OnItemSelectedListener  {
         "English", "Ukrainian"
     )
     private var isOn = false
+    lateinit var history_button : Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_page)
 
         val spin = findViewById<Spinner>(R.id.spinner)
+        history_button = findViewById<Button>(R.id.history_but)
 
         val mArrayAdapter = ArrayAdapter<Any?>(this, R.layout.spinner_selected_item, langs)
         mArrayAdapter.setDropDownViewResource(R.layout.spinner_list)
@@ -69,6 +75,12 @@ class SettingsActivity : AppCompatActivity(), OnItemSelectedListener  {
             }
             colorAnim.start()
         }
+
+        history_button.setOnClickListener {
+            startActivity(Intent(this@SettingsActivity, HistoryActivity::class.java))
+            finish()
+        }
+
 
     }
 

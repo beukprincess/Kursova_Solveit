@@ -29,7 +29,7 @@ object ImageUploader {
     }
 
     private val retrofit = Retrofit.Builder()
-        .baseUrl("https://1650-31-128-190-221.ngrok-free.app")
+        .baseUrl("https://c98e-31-128-190-108.ngrok-free.app")
         .build()
 
     private val apiService = retrofit.create(ApiService::class.java)
