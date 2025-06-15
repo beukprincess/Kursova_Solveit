@@ -25,8 +25,9 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.example.solve_it.models.QueryHistory
 
 class HomeActivity : AppCompatActivity() {
 
@@ -52,6 +53,11 @@ class HomeActivity : AppCompatActivity() {
         animationView.speed = 0.2f;
         animationView.playAnimation();
 
+        val historyButton = findViewById<Button>(R.id.history_button)
+        historyButton.setOnClickListener {
+            val intent = Intent(this, HistoryActivity::class.java)
+            startActivity(intent)
+        }
         // Request camera permissions
         if (allPermissionsGranted()) {
             startCamera()
@@ -182,6 +188,34 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun navigateToSolutionActivity(imageUri: Uri) {
+        val sharedPrefs = getSharedPreferences("MyPrefs", MODE_PRIVATE)
+        val login = sharedPrefs.getString("user_login", null)
+
+        if (login != null) {
+            lifecycleScope.launch {
+                try {
+                    val users = RetrofitClient.api.getUsers()
+                    val user = users.find { it.login == login }
+
+                    if (user != null) {
+                        val newHistory = QueryHistory(
+                            userId = user.id,
+                            taskText = "Задача з фото: ${imageUri.lastPathSegment}", // ЦЕ ЗМІНИТИ
+                            solution = listOf("Очікується розв’язок...") // ЦЕ ЗМІНИТИ
+                        )
+
+                        val response = RetrofitClient.api.addQueryHistory(newHistory)
+                        if (!response.isSuccessful) {
+                            Log.e("POST_HISTORY", "Не вдалося зберегти історію: ${response.code()}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("POST_HISTORY", "Помилка збереження історії: ${e.message}")
+                }
+            }
+        }
+
+
         val intent = Intent(this, SolutionActivity::class.java)
         intent.putExtra("imageUri", imageUri.toString())
         startActivity(intent)
