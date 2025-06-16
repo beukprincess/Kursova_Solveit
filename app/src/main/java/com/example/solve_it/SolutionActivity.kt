@@ -10,7 +10,10 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.airbnb.lottie.LottieAnimationView
+import com.example.solve_it.models.QueryHistory
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.File
@@ -20,6 +23,35 @@ class SolutionActivity : AppCompatActivity() {
     lateinit var imageView2: ImageView
     lateinit var solutionContainer: LinearLayout
     lateinit var animationView: LottieAnimationView
+
+    private fun saveQueryToHistory(name: String, answer: String) {
+        val sharedPrefs = getSharedPreferences("MyPrefs", MODE_PRIVATE)
+        val login = sharedPrefs.getString("user_login", null)
+
+        if (login != null) {
+            lifecycleScope.launch {
+                try {
+                    val users = RetrofitClient.api.getUsers()
+                    val user = users.find { it.login == login }
+
+                    if (user != null) {
+                        val newHistory = QueryHistory(
+                            userId = user.id,
+                            taskText = name,
+                            answer = answer
+                        )
+
+                        val response = RetrofitClient.api.addQueryHistory(newHistory)
+                        if (!response.isSuccessful) {
+                            Log.e("POST_HISTORY", "Не вдалося зберегти історію: ${response.code()}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("POST_HISTORY", "Помилка збереження історії: ${e.message}")
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,9 +73,14 @@ class SolutionActivity : AppCompatActivity() {
                 imageView2.setImageURI(imageUri)
 
                 // Upload image and wait for result.json
-                ImageUploader.upload(this, imageFile) {
+                ImageUploader.upload(this, imageFile) { name, answer ->
+                    AppData.name = name
+                    AppData.answer = answer
+                    if (name != null && answer != null) {
+                        saveQueryToHistory(name, answer)
+                    }
                     loadAndDisplaySolution()
-                    animationView.cancelAnimation();
+                    animationView.cancelAnimation()
                     animationView.visibility = View.GONE
                 }
             }

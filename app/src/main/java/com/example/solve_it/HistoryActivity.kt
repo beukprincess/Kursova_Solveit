@@ -52,7 +52,8 @@ class HistoryActivity : AppCompatActivity() {
                     Toast.makeText(this@HistoryActivity, "Користувача не знайдено", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@HistoryActivity, "Помилка: ${e.message}", Toast.LENGTH_LONG).show()
+                e.printStackTrace()
+                Toast.makeText(this@HistoryActivity, "RAZD: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

@@ -192,34 +192,6 @@ class HomeActivity : AppCompatActivity() {
         val sharedPrefs = getSharedPreferences("MyPrefs", MODE_PRIVATE)
         val login = sharedPrefs.getString("user_login", null)
 
-        if (login != null) {
-            lifecycleScope.launch {
-                try {
-                    val users = RetrofitClient.api.getUsers()
-                    val user = users.find { it.login == login }
-
-                    if (user != null) {
-                        val jsonString = intent.getStringExtra("json_data")
-                        val jsonObject = JSONObject(jsonString ?: "{}")
-                        val someValue = jsonObject.optString("keyName")
-
-                        val newHistory = QueryHistory(
-                            userId = user.id,
-                            taskText = "${AppData.name}",
-                            solution = "${AppData.answer}"
-                        )
-
-                        val response = RetrofitClient.api.addQueryHistory(newHistory)
-                        if (!response.isSuccessful) {
-                            Log.e("POST_HISTORY", "Не вдалося зберегти історію: ${response.code()}")
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e("POST_HISTORY", "Помилка збереження історії: ${e.message}")
-                }
-            }
-        }
-
 
         val intent = Intent(this, SolutionActivity::class.java)
         intent.putExtra("imageUri", imageUri.toString())

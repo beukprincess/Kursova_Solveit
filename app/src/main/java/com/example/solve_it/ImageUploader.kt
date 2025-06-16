@@ -23,6 +23,12 @@ import java.io.FileOutputStream
 
 object ImageUploader {
 
+    var name: String? = null
+        private set  // щоб змінювати тільки тут
+
+    var answer: String? = null
+        private set
+
     interface ApiService {
         @Multipart
         @POST("/upload")
@@ -37,7 +43,7 @@ object ImageUploader {
 
     private val apiService = retrofit.create(ApiService::class.java)
 
-    fun upload(context: Context, imageFile: File, onSuccess: () -> Unit) {
+    fun upload(context: Context, imageFile: File, onSuccess: (name: String?, answer: String?) -> Unit) {
         val requestFile = imageFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
         val body = MultipartBody.Part.createFormData("image", imageFile.name, requestFile)
 
@@ -48,6 +54,9 @@ object ImageUploader {
                     val responseObj: JSONObject = JSONObject()
                     val outputFile = File(context.filesDir, "result.json")
                     val file = File(context.filesDir, "result.json")
+                    FileOutputStream(outputFile).use { fileOut ->
+                        inputStream?.copyTo(fileOut)
+                    }
                     val rawContent = file.readText(Charsets.UTF_8)
 
                     Log.d("JSON_DEBUG", "Raw content: $rawContent")
@@ -73,11 +82,12 @@ object ImageUploader {
 
                     try {
                         val json = JSONObject(fixedJson)
-                        val name = json.getString("name")
-                        val answer = json.getString("answer")
+                        name = json.getString("name")
+                        answer = json.getString("answer")
 
                         AppData.name = name
                         AppData.answer = answer
+
 
                         Log.d(TAG, "Parsed name: $name")
                         Log.d(TAG, "Parsed answer: $answer")
@@ -86,10 +96,8 @@ object ImageUploader {
                     }
 
 
-                    FileOutputStream(outputFile).use { fileOut ->
-                        inputStream?.copyTo(fileOut)
-                    }
-                    onSuccess()
+
+                    onSuccess(name, answer)
                 } else {
                     Toast.makeText(context, "Server error", Toast.LENGTH_SHORT).show()
                 }

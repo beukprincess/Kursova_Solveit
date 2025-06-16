@@ -11,7 +11,7 @@ class QueryHistoryAdapter(private val historyList: List<QueryHistory>) :
 
     inner class HistoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val taskText: TextView = itemView.findViewById(R.id.taskTextView)
-        val solutionText: TextView = itemView.findViewById(R.id.solutionTextView)
+        val answerText: TextView = itemView.findViewById(R.id.answerTextView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HistoryViewHolder {
@@ -22,8 +22,9 @@ class QueryHistoryAdapter(private val historyList: List<QueryHistory>) :
 
     override fun onBindViewHolder(holder: HistoryViewHolder, position: Int) {
         val item = historyList[position]
+
         holder.taskText.text = "Задача: ${item.taskText}"
-        holder.solutionText.text = "Рішення:\n${item.solution}"
+        holder.answerText.text = "Рішення:\n${item.answer}"
     }
 
     override fun getItemCount() = historyList.size
