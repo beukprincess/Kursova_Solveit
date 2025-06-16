@@ -28,6 +28,7 @@ import java.util.concurrent.Executors
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.example.solve_it.models.QueryHistory
+import org.json.JSONObject
 
 class HomeActivity : AppCompatActivity() {
 
@@ -198,10 +199,14 @@ class HomeActivity : AppCompatActivity() {
                     val user = users.find { it.login == login }
 
                     if (user != null) {
+                        val jsonString = intent.getStringExtra("json_data")
+                        val jsonObject = JSONObject(jsonString ?: "{}")
+                        val someValue = jsonObject.optString("keyName")
+
                         val newHistory = QueryHistory(
                             userId = user.id,
-                            taskText = "Задача з фото: ${imageUri.lastPathSegment}", // ЦЕ ЗМІНИТИ
-                            solution = listOf("Очікується розв’язок...") // ЦЕ ЗМІНИТИ
+                            taskText = "${AppData.name}",
+                            solution = "${AppData.answer}"
                         )
 
                         val response = RetrofitClient.api.addQueryHistory(newHistory)

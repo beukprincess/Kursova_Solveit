@@ -23,7 +23,7 @@ class QueryHistoryAdapter(private val historyList: List<QueryHistory>) :
     override fun onBindViewHolder(holder: HistoryViewHolder, position: Int) {
         val item = historyList[position]
         holder.taskText.text = "Задача: ${item.taskText}"
-        holder.solutionText.text = "Рішення:\n${item.solution.joinToString("\n")}"
+        holder.solutionText.text = "Рішення:\n${item.solution}"
     }
 
     override fun getItemCount() = historyList.size

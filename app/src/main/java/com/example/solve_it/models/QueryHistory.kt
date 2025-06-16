@@ -4,5 +4,5 @@ data class QueryHistory(
     val queryHistoryId: String? = null,
     val userId: String?,
     val taskText: String,
-    val solution: List<String>
+    val solution: String
 )

@@ -1,11 +1,14 @@
 package com.example.solve_it
 
 import android.content.Context
+import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.ResponseBody
+import org.json.JSONException
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
@@ -29,7 +32,7 @@ object ImageUploader {
     }
 
     private val retrofit = Retrofit.Builder()
-        .baseUrl("https://c98e-31-128-190-108.ngrok-free.app")
+        .baseUrl("https://7891-31-128-190-108.ngrok-free.app")
         .build()
 
     private val apiService = retrofit.create(ApiService::class.java)
@@ -44,6 +47,45 @@ object ImageUploader {
                     val inputStream = response.body()?.byteStream()
                     val responseObj: JSONObject = JSONObject()
                     val outputFile = File(context.filesDir, "result.json")
+                    val file = File(context.filesDir, "result.json")
+                    val rawContent = file.readText(Charsets.UTF_8)
+
+                    Log.d("JSON_DEBUG", "Raw content: $rawContent")
+
+                    val TAG = "JSON_DEBUG"
+
+                    val unescaped = rawContent
+                        .removeSurrounding("\"")
+                        .replace("\\\"", "\"")
+                        .replace("\\\\", "\\")
+
+                    var fixedJson = unescaped.trim()
+
+                    if (!fixedJson.startsWith("\"name")) {
+                        fixedJson = "\"$fixedJson"
+                    }
+
+                    if (!fixedJson.endsWith("\"")) fixedJson += "\""
+                    if (!fixedJson.endsWith("}")) fixedJson += "}"
+                    if (!fixedJson.startsWith("{")) fixedJson = "{$fixedJson}"
+
+                    Log.d(TAG, "Fixed JSON: $fixedJson")
+
+                    try {
+                        val json = JSONObject(fixedJson)
+                        val name = json.getString("name")
+                        val answer = json.getString("answer")
+
+                        AppData.name = name
+                        AppData.answer = answer
+
+                        Log.d(TAG, "Parsed name: $name")
+                        Log.d(TAG, "Parsed answer: $answer")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "JSON parsing failed", e)
+                    }
+
+
                     FileOutputStream(outputFile).use { fileOut ->
                         inputStream?.copyTo(fileOut)
                     }
